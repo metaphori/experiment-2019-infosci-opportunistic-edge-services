@@ -1,0 +1,92 @@
+variables:
+  moveFrequency: &moveFrequency
+    formula: 1/60
+  pFollows: &pFollows
+    min: 0
+    max: 1
+    step: 0.1
+    default: 1
+  seed: &seed
+    min: 0
+    max: 10
+    step: 1
+    default: 0
+
+incarnation: protelis
+
+environment:
+  type: OSMEnvironment
+  parameters: ["vcm.pbf", false]
+
+network-model:
+  type: ConnectWithinDistance
+  parameters: [100]
+
+seeds:
+  simulation: *seed
+  scenario: *seed
+
+ReproduceGPSTrace: &ReproduceGPSTrace
+  type: ReproduceGPSTrace
+  parameters: ["vcmuser.gpx", false, AlignToTime, 1365922800, false, false]
+
+#export:
+#  - time
+#  - molecule: following
+#    aggregators: [sum]
+#    value-filter: onlyfinite
+#  - molecule: overcrowded
+#    aggregators: [sum]
+#    value-filter: onlyfinite
+#  - molecule: risk
+#    aggregators: [sum]
+#    value-filter: onlyfinite
+#  - molecule: warning
+#    aggregators: [sum]
+#    value-filter: onlyfinite
+#  - molecule: direction
+#    aggregators: [sum]
+#    value-filter: onlyfinite
+#  - molecule: crowd
+#    aggregators: [sum]
+#    value-filter: onlyfinite
+#  - type: CurrentSpeed
+#    parameters: [onlyfinite, [sum]]
+#  - type: DistanceTraveled
+#    parameters: [onlyfinite, [sum]]
+#  - type: OverallDistanceTraveled
+#    parameters: [onlyfinite, [sum]]
+
+pools:
+  - pool: &moveWithTraces
+    - time-distribution: *moveFrequency
+      type: Event
+      actions:
+        - *ReproduceGPSTrace
+  - pool: &move
+    - time-distribution: 0.1
+      type: Event
+      actions:
+        - *ReproduceGPSTrace
+  - pool: &crowd
+    - time-distribution: 1
+      program: crowd
+    - program: send
+
+displacements:
+  - in:
+      type: FromGPSTrace
+      parameters: [1497, "vcmuser.gpx", false, AlignToTime, 1365922800, false, false]
+    programs:
+      - *move
+#      - *crowd
+    contents:
+      - molecule: human
+        concentration: true
+  - in:
+      type: Rectangle
+      parameters: [1000, 48.17, 16.3, 0.07, 0.15]
+#    programs:
+#      - *crowd
+        
+        
