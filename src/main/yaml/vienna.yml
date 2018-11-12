@@ -1,16 +1,17 @@
 variables:
   moveFrequency: &moveFrequency
     formula: 1/60
-  pFollows: &pFollows
-    min: 0
-    max: 1
-    step: 0.1
-    default: 1
   seed: &seed
     min: 0
     max: 10
     step: 1
     default: 0
+  accessPointCount: &accessPointCount
+    type: ArbitraryVariable
+    parameters: [0, [0, 1, 10, 100, 500, 1000, 2000, 5000]]
+  range: &range
+    type: GeometricVariable
+    parameters: [1000, 10, 1000, 9]
 
 incarnation: protelis
 
@@ -20,7 +21,7 @@ environment:
 
 network-model:
   type: ConnectWithinDistance
-  parameters: [100]
+  parameters: [*range, "ciao"]
 
 seeds:
   simulation: *seed
@@ -30,8 +31,8 @@ ReproduceGPSTrace: &ReproduceGPSTrace
   type: ReproduceGPSTrace
   parameters: ["vcmuser.gpx", false, AlignToTime, 1365922800, false, false]
 
-#export:
-#  - time
+export:
+  - time
 #  - molecule: following
 #    aggregators: [sum]
 #    value-filter: onlyfinite
@@ -79,14 +80,14 @@ displacements:
       parameters: [1497, "vcmuser.gpx", false, AlignToTime, 1365922800, false, false]
     programs:
       - *move
-#      - *crowd
+      - *crowd
     contents:
       - molecule: human
         concentration: true
   - in:
       type: Rectangle
-      parameters: [1000, 48.17, 16.3, 0.07, 0.15]
-#    programs:
-#      - *crowd
+      parameters: [*accessPointCount, 48.17, 16.3, 0.07, 0.15]
+    programs:
+      - *crowd
         
         
