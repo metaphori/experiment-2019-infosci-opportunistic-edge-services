@@ -29,6 +29,7 @@ public final class AlchemistNetworkManager implements NetworkManager, Serializab
 
     private static final long serialVersionUID = -7028533174885876642L;
     private static final Molecule PACKET_SIZE = new SimpleMolecule("packet_size");
+    private static final Molecule MEAN_DELAY = new SimpleMolecule("mean_delay");
     private final Environment<Object, ?> env;
     private final ProtelisNode node;
     /**
@@ -130,7 +131,14 @@ public final class AlchemistNetworkManager implements NetworkManager, Serializab
             return res;
         }
         final double currentTime = event.getTau().toDouble();
-        return convertMessages(m -> currentTime - m.time < retentionTime);
+        final Map<DeviceUID, Map<CodePath, Object>> result = convertMessages(m -> currentTime - m.time < retentionTime);
+        if (trackingNetworkData) {
+            node.setConcentration(MEAN_DELAY, msgs.values().stream()
+                    .mapToDouble(message -> currentTime - message.time)
+                    .average()
+                    .orElse(Double.NaN));
+        }
+        return result;
     }
 
     /**
@@ -142,7 +150,7 @@ public final class AlchemistNetworkManager implements NetworkManager, Serializab
     }
 
     private void receiveMessage(final it.unibo.alchemist.protelis.AlchemistNetworkManager.MessageInfo msg) {
-        final MessageInfo oldMsg = msgs.put(msg.source, msg);
+        msgs.put(msg.source, msg);
     }
 
     @Override
