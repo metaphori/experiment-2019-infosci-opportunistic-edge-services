@@ -7,23 +7,12 @@ plugins {
     kotlin("jvm") version "1.3.0"
 }
 
-group = "it.unibo.alchemist"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
 }
 
-configurations {
-    all {
-        resolutionStrategy {
-            force("org.antlr:antlr-runtime:3.2")
-        }
-    }
-}
-
 dependencies {
-    api("it.unibo.alchemist:alchemist:8.0.0-beta-b76701c")
+    api("it.unibo.alchemist:alchemist:8.0.0-beta+0q8.31ea0")
     implementation(kotlin("stdlib-jdk8"))
 }
 
@@ -32,6 +21,12 @@ configure<JavaPluginConvention> {
 }
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+sourceSets.getByName("main") {
+    resources {
+        srcDirs("src/main/protelis")
+    }
 }
 
 task("runTests") {
