@@ -12,6 +12,9 @@ variables:
   range: &range
     type: GeometricVariable
     parameters: [1000, 10, 1000, 9]
+  retentionTime: &retentionTime
+    type: ArbitraryVariable
+    parameters: [5, [2, 5, 10, 20, 60]]
 
 incarnation: protelis
 
@@ -71,7 +74,10 @@ pools:
         - *ReproduceGPSTrace
   - pool: &crowd
     - time-distribution: 1
-      program: crowd
+      type: Event
+      actions:
+        - type: RunProtelisProgram
+          parameters: [crowd, *retentionTime, true]
     - program: send
 
 displacements:
