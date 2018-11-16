@@ -2,3 +2,5 @@
 .idea
 hs_err_pid*
 data/
+build/
+out/
