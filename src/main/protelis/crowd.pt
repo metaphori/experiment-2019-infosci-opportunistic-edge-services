@@ -77,4 +77,6 @@ def warning(radius, crowding) {
 let crowding = crowdTracking(0.005, 30, 0.25, 1.08, 2.17, 300, 60);
 env.put("overcrowded", crowding == overcrowded());
 env.put("risk", crowding == atRisk());
-warning(50, crowding);
+let warning = warning(50, crowding);
+env.put("warning", warning);
+warning

@@ -7,12 +7,14 @@ import java.lang.IllegalStateException
 class ExtractMoleculeFromSubsetOfNodes<T>(
     val incarnation: Incarnation<T, *>,
     val molecule: Molecule,
-    val property: String,
+    val property: String?,
     val fromId: Int,
     val numberOfNodes: Int
 ) : Extractor {
-    override fun extractData(env: Environment<*, *>, r: Reaction<*>, time: Time, step: Long): DoubleArray =
-        (env as Environment<T, *>).asSequence().sorted()
+    override fun extractData(
+        environment: Environment<*, *>,
+        reaction: Reaction<*>?,
+        time: Time?, step: Long): DoubleArray = (environment as Environment<T, *>).asSequence().sorted()
             .dropWhile { it.id != fromId }
             .take(numberOfNodes)
             .map { incarnation.getProperty(it, molecule, property) }
