@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.apache.tools.ant.taskdefs.condition.Os
+import org.codehaus.groovy.ast.tools.GeneralUtils.args
 import java.io.ByteArrayOutputStream
 
 plugins {
@@ -36,10 +37,12 @@ task("runTests") {
 }
 fun makeTest(
     file: String,
+    name: String = file,
     sampling: Double = 1.0,
     time: Double = Double.POSITIVE_INFINITY,
     vars: Set<String> = setOf(),
     maxHeap: Long? = null,
+    taskSize: Int = 1024,
     threads: Int? = null,
     debug: Boolean = false
 ) {
@@ -50,15 +53,15 @@ fun makeTest(
                 args = listOf("-c", "cat /proc/meminfo | grep MemTotal | grep -o '[0-9]*'")
                 standardOutput = output
             }
-            output.toString().trim().toLong()
-        } / 1024 - 2 * 1024
+            output.toString().trim().toLong() / 1024
+        } - 2 * 1024
     } else {
         // Guess 16GB RAM of which 2 used by the OS
         14 * 1024L
     }
-    val threadCount = threads ?: Math.min(Runtime.getRuntime().availableProcessors(), heap.toInt() / 2 / 1024)
-    println("Running on $threads threads")
-    task<JavaExec>("run$file") {
+    val threadCount = threads ?: maxOf(1, minOf(Runtime.getRuntime().availableProcessors(), heap.toInt() / taskSize ))
+    println("Running on $threadCount threads")
+    task<JavaExec>("$name") {
         classpath = sourceSets["main"].runtimeClasspath
         classpath("src/main/protelis")
         main = "it.unibo.alchemist.Alchemist"
@@ -70,7 +73,8 @@ fun makeTest(
         args(
             "-y", "src/main/yaml/${file}.yml",
             "-t", "$time",
-            "-e", "data/${file}",
+            "-e", "data/${name}",
+            "-p", threadCount,
             "-i", "$sampling"
         )
         if (vars.isNotEmpty()) {
@@ -83,5 +87,7 @@ fun makeTest(
         }
     }
 }
-makeTest(file = "vienna", sampling = 5.0)
+makeTest(name="cloud", file = "vienna", sampling = 10.0, time = 3600.0, vars = setOf("bandwidth", "propagationDelay", "range", "seed"), taskSize = 2 * 1024)
+makeTest(name="edge", file = "vienna", sampling = 10.0, time = 3600.0, vars = setOf("bandwidth", "accessPointCount", "range", "seed"), taskSize = 2 * 1024)
+makeTest(name="reference", file = "vienna", sampling = 10.0, time = 3600.0, vars = setOf("seed"), taskSize = 16 * 1024)
 defaultTasks("runTests")
