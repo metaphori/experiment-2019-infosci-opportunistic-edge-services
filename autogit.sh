@@ -2,7 +2,7 @@
 for file in data/*
   do LASTLINE="`tac "${file}" | egrep -m 1 .`"
   if [ "${LASTLINE:0:1}" == "#" ]
-    then git add "${file}"
+    then git add -f "${file}"
   fi
 done
 git commit -m "[AUTOMATIC ${USER}@${HOSTNAME} ] - Data generated up to `date`"
