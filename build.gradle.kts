@@ -51,12 +51,12 @@ fun makeTest(
         .use { output ->
             exec {
                 executable = "bash"
-                args = listOf("-c", "cat /proc/meminfo | grep MemTotal | grep -o '[0-9]*'")
+                args = listOf("-c", "cat /proc/meminfo | grep MemAvailable | grep -o '[0-9]*'")
                 standardOutput = output
             }
             output.toString().trim().toLong() / 1024
         }
-        .also { println("Detected ${it}MB RAM") }  - 2 * 1024
+        .also { println("Detected ${it}MB RAM available.") }  * 9 / 10
     } else {
         // Guess 16GB RAM of which 2 used by the OS
         14 * 1024L
@@ -89,7 +89,7 @@ fun makeTest(
         }
     }
 }
-makeTest(name="cloud", file = "vienna", sampling = 10.0, time = 3600.0, vars = setOf("bandwidth", "propagationDelay", "range", "seed"), taskSize = 4 * 1024)
-makeTest(name="edge", file = "vienna", sampling = 10.0, time = 3600.0, vars = setOf("bandwidth", "accessPointCount", "range", "seed"), taskSize = 4 * 1024)
+makeTest(name="cloud", file = "vienna", sampling = 10.0, time = 3600.0, vars = setOf("seed", "bandwidth", "propagationDelay", "range"), taskSize = 2500)
+makeTest(name="edge", file = "vienna", sampling = 10.0, time = 3600.0, vars = setOf("seed", "bandwidth", "accessPointCount", "range"), taskSize = 2500)
 makeTest(name="reference", file = "vienna", sampling = 10.0, time = 3600.0, vars = setOf("seed"), taskSize = 16 * 1024)
 defaultTasks("runTests")
