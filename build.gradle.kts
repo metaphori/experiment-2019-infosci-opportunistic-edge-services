@@ -85,7 +85,7 @@ fun makeTest(
     }
     tasks {
         "runTests" {
-            dependsOn("run$file")
+            dependsOn("$name")
         }
     }
 }
