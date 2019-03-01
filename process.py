@@ -132,12 +132,12 @@ if __name__ == '__main__':
     # CONFIGURE SCRIPT
     directory = 'data'
     pickleOutput = 'data_summary'
-    experiments = ['cloud', 'edge', 'reference']
+    experiments = ['cloud', 'edge']
     floatPrecision = '{: 0.2f}'
     seedVars = ['seed']
     timeSamples = 500
-    minTime = 0
-    maxTime = 3600
+    minTime = 65
+    maxTime = 665
     timeColumnName = 'time'
     logarithmicTime = False
     
@@ -261,7 +261,7 @@ if __name__ == '__main__':
             ax.legend(ncol=1)
 #            ax.set_ylim(bottom=-100, top=ax.get_ylim()[1])
         fig.tight_layout()
-        fig.savefig('edge-bandwidth'+var[0:5]+'.pdf')
+        fig.savefig('edge-range'+var[0:5]+'.pdf')
     
     # Edge delay and size with bandwidth and ap-count
     x = means['edge']['bandwidth']
@@ -290,7 +290,7 @@ if __name__ == '__main__':
             ax.set_ylim(0, 430)
             ax.legend(ncol=5, loc='upper left')
         fig.tight_layout()
-        fig.savefig('edge-range'+var[0:5]+'.pdf')
+        fig.savefig('edge-bandwidth'+var[0:5]+'.pdf')
     
     # Cloud delay and size with bandwidth and range
     x = means['cloud']['bandwidth']
@@ -356,28 +356,28 @@ if __name__ == '__main__':
     def comparisonChart(ycol):
         edge_sparse = means['edge'].sel({
                 'range': 100.0,
-                'bandwidth': means['edge']['bandwidth'][6],
+                'bandwidth': means['edge']['bandwidth'][7],
                 'accessPointCount': means['edge']['accessPointCount'][5]})
         edge_dense = means['edge'].sel({
                 'range': means['edge']['range'][4],
-                'bandwidth': means['edge']['bandwidth'][6],
+                'bandwidth': means['edge']['bandwidth'][7],
                 'accessPointCount': means['edge']['accessPointCount'][7]})
         edge_denser = means['edge'].sel({
                 'range': means['edge']['range'][4],
-                'bandwidth': means['edge']['bandwidth'][6],
+                'bandwidth': means['edge']['bandwidth'][7],
                 'accessPointCount': means['edge']['accessPointCount'][8]})
         cloud_2g = means['cloud'].sel({
                 'range': means['cloud']['range'][4],
                 'bandwidth': means['cloud']['bandwidth'][3],
-                'propagationDelay': means['cloud']['propagationDelay'][5]})
+                'propagationDelay': means['cloud']['propagationDelay'][6]})
         cloud_3g = means['cloud'].sel({
                 'range': means['cloud']['range'][4],
                 'bandwidth': means['cloud']['bandwidth'][4],
-                'propagationDelay': means['cloud']['propagationDelay'][4]})
+                'propagationDelay': means['cloud']['propagationDelay'][5]})
         cloud_4g = means['cloud'].sel({
                 'range': means['cloud']['range'][4],
-                'bandwidth': means['cloud']['bandwidth'][5],
-                'propagationDelay': means['cloud']['propagationDelay'][3]})
+                'bandwidth': means['cloud']['bandwidth'][6],
+                'propagationDelay': means['cloud']['propagationDelay'][4]})
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
         ax.set_xlabel("Simulated time (s)")
