@@ -89,7 +89,7 @@ fun makeTest(
         }
     }
 }
-makeTest(name="cloud", file = "vienna", sampling = 10.0, time = 665.0, vars = setOf("seed", "bandwidth", "propagationDelay", "range"), taskSize = 2200)
-makeTest(name="edge", file = "vienna", sampling = 10.0, time = 665.0, vars = setOf("seed", "bandwidth", "accessPointCount", "range"), taskSize = 3000)
+makeTest(name="cloud", file = "vienna", sampling = 10.0, time = 665.0, vars = setOf("seed", "bandwidth", "propagationDelay", "baserange"), taskSize = 2200)
+makeTest(name="edge", file = "vienna", sampling = 10.0, time = 665.0, vars = setOf("seed", "bandwidth", "accessPointCount", "baserange"), taskSize = 3000)
 //makeTest(name="reference", file = "vienna", sampling = 10.0, time = 3600.0, vars = setOf("seed"), taskSize = 16 * 1024)
 defaultTasks("runTests")
