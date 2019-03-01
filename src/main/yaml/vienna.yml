@@ -3,7 +3,7 @@ variables:
     formula: 1/60
   seed: &seed
     min: 0
-    max: 10
+    max: 9
     step: 1
     default: 0
   accessPointCount: &accessPointCount
