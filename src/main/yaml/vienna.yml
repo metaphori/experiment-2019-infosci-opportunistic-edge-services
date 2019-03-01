@@ -21,9 +21,10 @@ variables:
     parameters: [0, 1e-3, 10, 9]
   bandwidth: &bandwidth
     type: GeometricVariable
-    parameters: [1e300, 100, 1e7, 9]
+    parameters: [1e6, 100, 1e7, 9]
   accessPointId: &accessPointId
-    formula: "\"access_point\""
+    formula: "if ($accessPointCount == 0) \"\" else \"access_point\""
+    language: scala
   packetSizeId: &packetSizeId
     formula: "\"packet_size\""
   bandwidthId: &bandwidthId
