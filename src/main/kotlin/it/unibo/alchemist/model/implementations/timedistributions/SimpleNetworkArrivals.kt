@@ -23,6 +23,10 @@ import java.lang.IllegalStateException
  * constant delay. Otherwise, the String will be used within [Incarnation.getProperty]
  *
  */
+
+private val Molecule?.isMeaningful: Molecule?
+    get() = this?.takeUnless { name.isNullOrBlank() }
+
 class SimpleNetworkArrivals<T> private constructor(
         val incarnation: Incarnation<T, *>,
         val environment: Environment<T, *>,
@@ -68,7 +72,7 @@ class SimpleNetworkArrivals<T> private constructor(
         constantPacketSize = packetSize,
         bandwidthMolecule = bandwidthMolecule,
         bandwidthProperty = bandwidthProperty,
-        accessPointIdentificator = accessPointIdentificator)
+        accessPointIdentificator = accessPointIdentificator.isMeaningful)
 
     @JvmOverloads
     constructor(incarnation: Incarnation<T, *>,
@@ -86,7 +90,7 @@ class SimpleNetworkArrivals<T> private constructor(
         packetSizeProperty = packetSizeProperty,
         bandwidthMolecule = bandwidthMolecule,
         bandwidthProperty = bandwidthProperty,
-        accessPointIdentificator = accessPointIdentificator)
+        accessPointIdentificator = accessPointIdentificator.isMeaningful)
 
     @JvmOverloads
     constructor(incarnation: Incarnation<T, *>,
@@ -107,7 +111,7 @@ class SimpleNetworkArrivals<T> private constructor(
         packetSizeProperty = packetSizeProperty,
         bandwidthMolecule = bandwidthMolecule,
         bandwidthProperty = bandwidthProperty,
-        accessPointIdentificator = accessPointIdentificator)
+        accessPointIdentificator = accessPointIdentificator.isMeaningful)
 
     private var time = startTime
     private var genTime = time
