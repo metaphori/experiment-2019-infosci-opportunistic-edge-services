@@ -5,3 +5,6 @@ data/
 build/
 out/
 *.pdf
+data_summary_mean
+data_summary_std
+timeprocessed
