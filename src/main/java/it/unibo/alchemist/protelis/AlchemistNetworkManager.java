@@ -9,15 +9,14 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import it.unibo.alchemist.model.implementations.molecules.SimpleMolecule;
-import it.unibo.alchemist.model.interfaces.Molecule;
+import it.unibo.alchemist.model.interfaces.*;
 import org.protelis.lang.datatype.DeviceUID;
+import org.protelis.lang.datatype.Tuple;
 import org.protelis.vm.NetworkManager;
 import org.protelis.vm.util.CodePath;
 
 import it.unibo.alchemist.model.implementations.actions.RunProtelisProgram;
 import it.unibo.alchemist.model.implementations.nodes.ProtelisNode;
-import it.unibo.alchemist.model.interfaces.Environment;
-import it.unibo.alchemist.model.interfaces.Reaction;
 
 /**
  * Emulates a {@link NetworkManager}. This particular network manager does not
@@ -30,6 +29,7 @@ public final class AlchemistNetworkManager implements NetworkManager, Serializab
     private static final long serialVersionUID = -7028533174885876642L;
     private static final Molecule PACKET_SIZE = new SimpleMolecule("packet_size");
     private static final Molecule MEAN_DELAY = new SimpleMolecule("mean_delay");
+    private static final Molecule NEIGHBOR_COUNT = new SimpleMolecule("neighbor_count");
     private final Environment<Object, ?> env;
     private final ProtelisNode node;
     /**
@@ -133,6 +133,7 @@ public final class AlchemistNetworkManager implements NetworkManager, Serializab
         final double currentTime = event.getTau().toDouble();
         final Map<DeviceUID, Map<CodePath, Object>> result = convertMessages(m -> currentTime - m.time < retentionTime);
         if (trackingNetworkData) {
+            node.setConcentration(NEIGHBOR_COUNT, msgs.size());
             node.setConcentration(MEAN_DELAY, msgs.values().stream()
                     .mapToDouble(message -> currentTime - message.time)
                     .average()
@@ -157,8 +158,51 @@ public final class AlchemistNetworkManager implements NetworkManager, Serializab
     public void shareState(final Map<CodePath, Object> toSend) {
         toBeSent = toSend;
         if (trackingNetworkData) {
-            node.setConcentration(PACKET_SIZE, toSend.keySet().stream().mapToInt(it -> it.size() * 8 + 8).sum());
+//            node.setConcentration(PACKET_SIZE, toSend.keySet().stream().mapToInt(it -> it.size() * 8 + 8).sum());
+            node.setConcentration(PACKET_SIZE, toSend.keySet().stream().mapToInt(it -> it.size() * 8 + 8).sum()
+                + toSend.values().stream().distinct().mapToInt(o -> {
+                    if (o instanceof Position) {
+                        return 16;
+                    }
+                    if (o instanceof Integer) {
+                        return 4;
+                    }
+                    if (o instanceof Double) {
+                        return 8;
+                    }
+                    if (o instanceof Tuple) {
+                        return 8 * ((Tuple) o).size();
+                    }
+                    if (o instanceof Node) {
+                        return 4;
+                    }
+                    System.out.println("Unknown size of: " + o .getClass().getName());
+                    return 20;
+            }).sum());
         }
+    }
+
+    private static int computeSizeInBytes(Object o) {
+        if (o instanceof Position) {
+            return 16;
+        }
+        if (o instanceof Integer) {
+            return 4;
+        }
+        if (o instanceof Double) {
+            return 8;
+        }
+        if (o instanceof Tuple) {
+            int size = 0;
+            for (Object c: (Tuple) o) {
+                size += computeSizeInBytes(c);
+            }
+            return size;
+        }
+        if (o instanceof Node) {
+            return 4;
+        }
+        return 20;
     }
 
     /**
