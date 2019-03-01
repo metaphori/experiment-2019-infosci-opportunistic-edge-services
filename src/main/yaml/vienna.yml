@@ -8,10 +8,20 @@ variables:
     default: 0
   accessPointCount: &accessPointCount
     type: GeometricVariable
-    parameters: [0, 10, 2000, 9]
-  range: &range
+    parameters: [2000, 10, 2000, 9]
+  baserange: &baserange
     type: GeometricVariable
-    parameters: [100, 10, 1000, 9]
+    parameters: [1000, 10, 1000, 9]
+  range: &range
+    formula: >
+      val s = $currentCase;
+      s match {
+        case "reference" => 1e20
+        case "cloud" => $baserange
+        case "edge" => ($baserange - 10) / 2 + 10
+        case other => other + " is not a meaningful case"
+      }
+    language: scala
   retentionTime: &retentionTime
 #    type: ArbitraryVariable
 #    parameters: [5, [2, 5, 10, 20, 60]]
