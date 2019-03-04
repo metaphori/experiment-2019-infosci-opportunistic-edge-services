@@ -1,0 +1,13 @@
+#####################################################################
+# Alchemist log file - simulation started at: 2019-03-04T11:59+0000 #
+#####################################################################
+# seed = 8.0, bandwidth = 1000.0, accessPointCount = 274.2481756762073, baserange = 177.82794100389228
+#
+# The columns have the following meaning: 
+# time neighbor_count[Sum] <value>@neighbor_count[Sum] packet_size[Mean] mean_delay[Mean] crowd[Sum] overcrowded[Sum] risk[Sum] 
+0.0 NaN NaN NaN NaN NaN NaN NaN 
+10.000272693243975 117.0 65.0 4984.627893845285 4.048887415388598 1497.0 0.0 1497.0 
+20.000927030832834 337.0 168.0 4985.036702428007 6.223860911560387 1497.0 0.0 1497.0 
+#####################################################################
+# End of data export. Simulation finished at: 2019-03-04T12:04+0000 #
+#####################################################################
