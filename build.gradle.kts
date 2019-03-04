@@ -68,6 +68,7 @@ fun makeTest(
         classpath("src/main/protelis")
         main = "it.unibo.alchemist.Alchemist"
         maxHeapSize = "${heap}m"
+        jvmArgs("-XX:+AggressiveHeap")
         if (debug) {
             jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044")
         }
@@ -90,6 +91,6 @@ fun makeTest(
     }
 }
 makeTest(name="cloud", file = "vienna", sampling = 10.0, time = 665.0, vars = setOf("seed", "bandwidth", "propagationDelay", "baserange"), taskSize = 2200)
-makeTest(name="edge", file = "vienna", sampling = 10.0, time = 665.0, vars = setOf("seed", "bandwidth", "accessPointCount", "baserange"), taskSize = 3000)
+makeTest(name="edge", file = "vienna", sampling = 10.0, time = 665.0, vars = setOf("seed", "bandwidth", "accessPointCount", "baserange"), taskSize = 3200)
 //makeTest(name="reference", file = "vienna", sampling = 10.0, time = 3600.0, vars = setOf("seed"), taskSize = 16 * 1024)
 defaultTasks("runTests")
