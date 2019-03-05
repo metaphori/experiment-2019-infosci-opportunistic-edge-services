@@ -135,9 +135,9 @@ if __name__ == '__main__':
     experiments = ['cloud', 'edge']
     floatPrecision = '{: 0.2f}'
     seedVars = ['seed']
-    timeSamples = 500
     minTime = 65
     maxTime = 665
+    timeSamples = int(maxTime - minTime) // 2
     timeColumnName = 'time'
     logarithmicTime = False
     
@@ -151,7 +151,7 @@ if __name__ == '__main__':
         lastTimeProcessed = pickle.load(open('timeprocessed', 'rb'))
     except:
         lastTimeProcessed = -1
-    shouldRecompute = newestFileTime != lastTimeProcessed
+    shouldRecompute = False #newestFileTime != lastTimeProcessed
     if not shouldRecompute:
         try:
             means = pickle.load(open(pickleOutput + '_mean', 'rb'))
@@ -203,6 +203,7 @@ if __name__ == '__main__':
             timeline = timefun(minTime, maxTime, timeSamples)
             # Resample
             for file in allData:
+                print("Working on " + file)
                 allData[file] = convert(timeColumn, timeline, allData[file])
             # Populate the dataset
             for file, data in allData.items():
@@ -226,8 +227,8 @@ if __name__ == '__main__':
     import matplotlib.cm as cmx
     import matplotlib.patches as patches
     figure_size=(6, 3.5)
-    matplotlib.rcParams.update({'axes.titlesize': 14})
-    matplotlib.rcParams.update({'axes.labelsize': 13})
+    matplotlib.rcParams.update({'axes.titlesize': 13})
+    matplotlib.rcParams.update({'axes.labelsize': 12})
 #    colormap = cmx.gist_rainbow
     colormap = cmx.viridis
     
@@ -235,64 +236,101 @@ if __name__ == '__main__':
     packet_size = 'packet_size[Mean]'
     delay = 'mean_delay[Mean]'
     crowd = 'crowd[Sum]'
-    x = means['edge']['range']
-    for var in [delay, crowd]:
+    energy = '<value>@neighbor_count[Sum]'
+    titlebase = {
+        packet_size: 'Packet size',
+        delay: 'Delay',
+        crowd: 'Users notified',
+        energy: 'Appr. energy use'
+    }
+    ylabels = {
+        packet_size: 'Packet size (Bytes)',
+        delay: 'Mean packet delay (s)',
+        energy: 'Mean data processed (B/s)',
+        crowd: 'Notified users'
+    }
+    x = means['edge']['baserange'] / 2
+    for var in [delay, crowd, packet_size, energy]:
         merge_data = means['edge'].mean('time').mean('bandwidth')
+#        merge_data = means['edge'].mean('time').sel(bandwidth = means['edge']['bandwidth'][7])
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
         ax.set_xlabel("Wireless range (m)")
-        ax.set_ylabel({
-            packet_size: 'Packet size (Bytes)',
-            delay: 'Mean packet delay (s)',
-            crowd: 'People warned'
-        }[var])
+        ax.set_ylabel(ylabels[var])
         ax.set_xscale('log')
-        ax.set_title('Sensitivity on range and number of edge nodes')
+        ax.set_title(titlebase[var] + ' with range and edge server count')
         index = 0
         for ap_count in merge_data['accessPointCount']:
             y = merge_data.data_vars[var].sel({'accessPointCount': ap_count})
+            if (var == energy):
+                y *= merge_data.data_vars[packet_size].sel({'accessPointCount': ap_count})
+                ax.set_yscale('log')
+                ax.set_ylim(top = 1.8e8)
             ax.plot(x, y, label=str(int(ap_count)), color=colormap(index / 9))
             index = index + 1
-        ax.set_ylim(bottom=0, top=ax.get_ylim()[1])
-        ax.add_patch(patches.Rectangle((46 / 3, ax.get_ylim()[0]), 92 - 46 / 3, ax.get_ylim()[1]-ax.get_ylim()[0], alpha=0.2, color='black'))
-        ax.text(x=22, y=ax.get_ylim()[1]*0.95, color='black', s='typical wifi range')
+        ax.set_ylim(bottom=ax.get_ylim()[0] * 0.9 if var in [delay, energy] else 0, top=ax.get_ylim()[1] * 1.1)
+        ax.add_patch(patches.Rectangle((46, ax.get_ylim()[0]), 92 - 46, ax.get_ylim()[1]-ax.get_ylim()[0], alpha=0.15, color='black'))
+        ax.set_xlim(min(x), max(x))
+        ypos = {
+            packet_size: 1100,
+            delay: 1.8,
+            energy: 1.8e2,
+            crowd: 415
+        }[var]
+        ax.text(x=53, y=ypos, color='black', s='typical\nWi-Fi\nrange')
         ax.legend(ncol=5)
         if (var == crowd):
             ax.legend(ncol=1)
 #            ax.set_ylim(bottom=-100, top=ax.get_ylim()[1])
         fig.tight_layout()
-        fig.savefig('edge-range'+var[0:5]+'.pdf')
+        fig.savefig('edge-range'+''.join(filter(str.isalpha, titlebase[var]))+'.pdf')
     
     # Edge delay and size with bandwidth and ap-count
     x = means['edge']['bandwidth']
-    for var in [delay, crowd]:
-        merge_data = means['edge'].mean('time').mean('range')
+    for var in [delay, crowd, packet_size, energy]:
+        merge_data = means['edge'].mean('time').mean('baserange')
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
-        ax.set_xlabel("Bandwidth (B/s)")
-        ax.set_ylabel({
-            packet_size: 'Packet size (Bytes)',
-            delay: 'Mean packet delay (s)',
-            crowd: 'People warned'
-        }[var])
+        ax.set_xlabel("Data rate (B/s)")
+        ax.set_ylabel(ylabels[var])
         ax.set_xscale('log')
-        ax.set_title('Sensitivity on bandwidth and number of edge nodes')
+        ax.set_title(titlebase[var] + ' with data rate and edge server count')
         index = 0
         for ap_count in merge_data['accessPointCount']:
             y = merge_data.data_vars[var].sel({'accessPointCount': ap_count})
+            if (var == energy):
+                y *= merge_data.data_vars[packet_size].sel({'accessPointCount': ap_count})
+                ax.set_yscale('log')
             ax.plot(x, y, label=str(int(ap_count)), color=colormap(index / 9))
             index = index + 1
-        ax.set_ylim(bottom=0, top=ax.get_ylim()[1])
-        ax.add_patch(patches.Rectangle((5.5e6 / 8, 0), 100e6/8 - 5.5e6 / 8, ax.get_ylim()[1], alpha=0.2, color='black'))
-        ax.text(x=10e5, y=ax.get_ylim()[1]*0.10, color='black', s='typical\nwifi\nbandwidth')
-        ax.legend(ncol=2)
-        if (var == crowd):
-            ax.set_ylim(0, 430)
-            ax.legend(ncol=5, loc='upper left')
+        ax.set_xlim(min(x), max(x))
+        ncol = {
+            packet_size: 5,
+            delay: 5,
+            energy: 5,
+            crowd: 5
+        }[var]
+        ylim = {
+            packet_size: (420, ax.get_ylim()[1]),
+            crowd: (0, 365),
+            energy: (2e3, ax.get_ylim()[1]),
+        }.get(var, ax.get_ylim())
+        ax.set_ylim(ylim)
+        ax.legend(ncol=ncol)
+        ax.add_patch(patches.Rectangle((5.5e6 / 8, 0), 100e6/8 - 5.5e6 / 8, ax.get_ylim()[1], alpha=0.15, color='black'))
+        texty = {
+            crowd: 30,
+            packet_size: 650,
+            energy: 2e4,
+        }.get(var, ax.get_ylim()[1] / 2)
+        ax.text(x=5e5, y=texty, color='black', s='typical Wi-Fi data rate')
         fig.tight_layout()
-        fig.savefig('edge-bandwidth'+var[0:5]+'.pdf')
+        fig.savefig('edge-datarate'+''.join(filter(str.isalpha, titlebase[var]))+'.pdf')
     
     # Cloud delay and size with bandwidth and range
+    energy = 'neighbor_count[Sum]'
+    titlebase[energy] = 'Appr. energy use'
+    ylabels[energy] = 'Mean data processed (B/s)'
     x = means['cloud']['bandwidth']
     mobile_technologies = {
         "2G (EDGE)": [0.1e6 / 8, 0.3e6 / 8, 'black'],
@@ -300,110 +338,112 @@ if __name__ == '__main__':
         "HSPA+": [4e6 / 8, 21e6 / 8, 'green'],
         "LTE-AC6": [24e6 / 8, 300e6 / 8, 'blue']
     }
-    for var in [delay, crowd]:
+    for var in [delay, crowd, packet_size, energy]:
         merge_data = means['cloud'].mean('time').mean('propagationDelay')
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
-        ax.set_xlabel("Bandwidth (B/s)")
-        ax.set_ylabel({
-            packet_size: 'Packet size (Bytes)',
-            delay: 'Mean packet delay (s)',
-            crowd: 'People warned'
-        }[var])
+        ax.set_xlabel("Data rate (B/s)")
+        ax.set_ylabel(ylabels[var])
         ax.set_xscale('log')
-        ax.set_title('Sensitivity on bandwidth and computation effort')
+        ax.set_title(titlebase[var] + ' with data rate and computation effort')
         index = 0
-        for _range in merge_data['range']:
-            y = merge_data.data_vars[var].sel({'range': _range})
+        for _range in merge_data['baserange']:
+            y = merge_data.data_vars[var].sel({'baserange': _range})
+            if (var == energy):
+                y *= merge_data.data_vars[packet_size].sel({'baserange': _range})
+                ax.set_yscale('log')
             ax.plot(x, y, label=str(int(_range)), color=colormap(index / 9))
             index = index + 1
         ax.set_ylim(bottom=0, top=ax.get_ylim()[1])
         for mobile_name, mobile_perf in mobile_technologies.items():
             bw_min = mobile_perf[0] / 2
             bw_max = mobile_perf[1] / 2
-            ax.add_patch(patches.Rectangle((bw_min, 0), bw_max-bw_min, ax.get_ylim()[1], alpha=0.2, color=mobile_perf[2]))
+            ax.add_patch(patches.Rectangle((bw_min, 0), bw_max-bw_min, ax.get_ylim()[1], alpha=0.15, color=mobile_perf[2]))
             ax.text(x=bw_min*1.1, y=ax.get_ylim()[1]*0.45, color='black', s=mobile_name)
         ax.legend(ncol=5)
+        ax.set_xlim(min(x), max(x))
         fig.tight_layout()
-        fig.savefig('cloud-bandwidth'+var[0:5]+'.pdf')
+        fig.savefig('cloud-bandwidth'+''.join(filter(str.isalpha, titlebase[var]))+'.pdf')
     
     # Cloud delay and size with propagation delay and range
     x = means['cloud']['propagationDelay']
-    for var in [delay, crowd]:
+    for var in [delay, crowd, packet_size, energy]:
         merge_data = means['cloud'].mean('time').mean('bandwidth')
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
         ax.set_xlabel("Propagation delay (s)")
-        ax.set_ylabel({
-            packet_size: 'Packet size (Bytes)',
-            delay: 'Mean packet delay (s)',
-            crowd: 'People warned'
-        }[var])
+        ax.set_ylabel(ylabels[var])
         ax.set_xscale('log')
-        ax.set_title('Sensitivity on propagation delay and computation effort')
+        ax.set_title(titlebase[var] + ' with propagation delay and computation effort')
         index = 0
-        for _range in merge_data['range']:
-            y = merge_data.data_vars[var].sel({'range': _range})
+        for _range in merge_data['baserange']:
+            y = merge_data.data_vars[var].sel({'baserange': _range})
+            if (var == energy):
+                y *= merge_data.data_vars[packet_size].sel({'baserange': _range})
+                ax.set_yscale('log')
             ax.plot(x, y, label=str(int(_range)), color=colormap(index / 9))
             index = index + 1
         ax.set_ylim(bottom=0, top=ax.get_ylim()[1])
         ax.add_patch(patches.Rectangle((50e-3, 0), 450e-3, ax.get_ylim()[1], alpha=0.2, color='black'))
+        ax.set_xlim(min(x), max(x))
         ax.text(x=1e-1, y=ax.get_ylim()[1]*0.6, color='black', s='typical\ndelay')
         ax.legend(ncol=5)
         fig.tight_layout()
         fig.savefig('cloud-propagation'+var[0:5]+'.pdf')
     
-    def comparisonChart(ycol):
-        edge_sparse = means['edge'].sel({
-                'range': 100.0,
-                'bandwidth': means['edge']['bandwidth'][7],
-                'accessPointCount': means['edge']['accessPointCount'][5]})
-        edge_dense = means['edge'].sel({
-                'range': means['edge']['range'][4],
-                'bandwidth': means['edge']['bandwidth'][7],
-                'accessPointCount': means['edge']['accessPointCount'][7]})
-        edge_denser = means['edge'].sel({
-                'range': means['edge']['range'][4],
-                'bandwidth': means['edge']['bandwidth'][7],
-                'accessPointCount': means['edge']['accessPointCount'][8]})
-        cloud_2g = means['cloud'].sel({
-                'range': means['cloud']['range'][4],
-                'bandwidth': means['cloud']['bandwidth'][3],
-                'propagationDelay': means['cloud']['propagationDelay'][6]})
-        cloud_3g = means['cloud'].sel({
-                'range': means['cloud']['range'][4],
-                'bandwidth': means['cloud']['bandwidth'][4],
-                'propagationDelay': means['cloud']['propagationDelay'][5]})
-        cloud_4g = means['cloud'].sel({
-                'range': means['cloud']['range'][4],
-                'bandwidth': means['cloud']['bandwidth'][6],
-                'propagationDelay': means['cloud']['propagationDelay'][4]})
-        fig = plt.figure(figsize = figure_size)
-        ax = fig.add_subplot(1, 1, 1)
-        ax.set_xlabel("Simulated time (s)")
-    #    ax.set_yscale('log')
-        ax.plot(edge_sparse['time'], edge_sparse.data_vars[ycol], label='edge-sparse')
-        ax.plot(edge_sparse['time'], edge_dense.data_vars[ycol], label='edge-dense')
-        ax.plot(edge_sparse['time'], edge_denser.data_vars[ycol], label='edge-denser')
-        ax.plot(edge_sparse['time'], cloud_2g.data_vars[ycol], label='cloud-2G')
-        ax.plot(edge_sparse['time'], cloud_3g.data_vars[ycol], label='cloud-3G')
-        ax.plot(edge_sparse['time'], cloud_4g.data_vars[ycol], label='cloud-LTE')
-        return (fig, ax)
-    
-    # Comparison
-    delay = 'mean_delay[Mean]'
-    fig, ax = comparisonChart(delay)
-    ax.set_ylabel('Mean packet delay (s)')
-    ax.set_title('Packet delay: edge/cloud comparison')
-    ax.legend(ncol=2, bbox_to_anchor=(0.37, 0.58))
-    fig.savefig('edge-cloud-delay.pdf')
-    
-    # Quality
-    fig, ax = comparisonChart('crowd[Sum]')
-    ax.set_ylabel('People notified of danger')
-    ax.set_title('Notified users: edge/cloud comparison')
-    ax.set_ylim(0, 620)
-    ax.legend(ncol=3, bbox_to_anchor=(0.98, 0.25))
-    fig.savefig('edge-cloud-quality.pdf')
+#    def comparisonChart(ycol):
+#        edge_sparse = means['edge'].sel({
+#                'baserange': means['edge']['baserange'][5],
+#                'bandwidth': means['edge']['bandwidth'][7],
+#                'accessPointCount': means['edge']['accessPointCount'][5]})
+#        edge_dense = means['edge'].sel({
+#                'baserange': means['edge']['baserange'][5],
+#                'bandwidth': means['edge']['bandwidth'][7],
+#                'accessPointCount': means['edge']['accessPointCount'][7]})
+#        edge_denser = means['edge'].sel({
+#                'baserange': means['edge']['baserange'][5],
+#                'bandwidth': means['edge']['bandwidth'][7],
+#                'accessPointCount': means['edge']['accessPointCount'][8]})
+#        cloud_2g = means['cloud'].sel({
+#                'baserange': means['cloud']['baserange'][2],
+#                'bandwidth': means['cloud']['bandwidth'][1],
+#                'propagationDelay': means['cloud']['propagationDelay'][7]})
+#        cloud_3g = means['cloud'].sel({
+#                'baserange': means['cloud']['baserange'][2],
+#                'bandwidth': means['cloud']['bandwidth'][3],
+#                'propagationDelay': means['cloud']['propagationDelay'][6]})
+#        cloud_4g = means['cloud'].sel({
+#                'baserange': means['cloud']['baserange'][2],
+#                'bandwidth': means['cloud']['bandwidth'][5],
+#                'propagationDelay': means['cloud']['propagationDelay'][5]})
+#        fig = plt.figure(figsize = figure_size)
+#        ax = fig.add_subplot(1, 1, 1)
+#        ax.set_xlabel("Simulated time (s)")
+#    #    ax.set_yscale('log')
+#        x = edge_sparse['time'] - minTime
+#        ax.plot(x, edge_sparse.data_vars[ycol], label='edge-sparse')
+#        ax.plot(x, edge_dense.data_vars[ycol], label='edge-dense')
+#        ax.plot(x, edge_denser.data_vars[ycol], label='edge-denser')
+#        ax.plot(x, cloud_2g.data_vars[ycol], label='cloud-2G')
+#        ax.plot(x, cloud_3g.data_vars[ycol], label='cloud-3G')
+#        ax.plot(x, cloud_4g.data_vars[ycol], label='cloud-LTE')
+#        ax.set_xlim(0, maxTime - minTime)
+#        return (fig, ax)
+#    
+#    # Comparison
+#    delay = 'mean_delay[Mean]'
+#    fig, ax = comparisonChart(delay)
+#    ax.set_ylabel('Mean packet delay (s)')
+#    ax.set_title('Packet delay: edge/cloud comparison')
+#    ax.legend(ncol=2, bbox_to_anchor=(0.37, 0.58))
+#    fig.savefig('edge-cloud-delay.pdf')
+#    
+#    # Quality
+#    fig, ax = comparisonChart('crowd[Sum]')
+#    ax.set_ylabel('People notified of danger')
+#    ax.set_title('Notified users: edge/cloud comparison')
+#    ax.set_ylim(0, 620)
+#    ax.legend(ncol=3, bbox_to_anchor=(0.98, 0.25))
+#    fig.savefig('edge-cloud-quality.pdf')
     
     #means['edge'].sel(bandwidth=1e7).mean('time').data_vars['packet_size[Mean]']
