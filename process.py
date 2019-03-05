@@ -391,6 +391,7 @@ if __name__ == '__main__':
         fig.tight_layout()
         fig.savefig('cloud-propagation'+var[0:5]+'.pdf')
     
+#    # Comparisons
 #    def comparisonChart(ycol):
 #        edge_sparse = means['edge'].sel({
 #                'baserange': means['edge']['baserange'][5],
