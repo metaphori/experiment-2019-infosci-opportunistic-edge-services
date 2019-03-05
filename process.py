@@ -227,8 +227,8 @@ if __name__ == '__main__':
     import matplotlib.cm as cmx
     import matplotlib.patches as patches
     figure_size=(6, 3.5)
-    matplotlib.rcParams.update({'axes.titlesize': 14})
-    matplotlib.rcParams.update({'axes.labelsize': 13})
+    matplotlib.rcParams.update({'axes.titlesize': 13})
+    matplotlib.rcParams.update({'axes.labelsize': 12})
 #    colormap = cmx.gist_rainbow
     colormap = cmx.viridis
     
@@ -237,40 +237,47 @@ if __name__ == '__main__':
     delay = 'mean_delay[Mean]'
     crowd = 'crowd[Sum]'
     energy = '<value>@neighbor_count[Sum]'
-    x = means['edge']['baserange']
+    titlebase = {
+        packet_size: 'Packet size',
+        delay: 'Delay',
+        crowd: 'Users notified',
+        energy: 'Appr. energy use'
+    }
+    ylabels = {
+        packet_size: 'Packet size (Bytes)',
+        delay: 'Mean packet delay (s)',
+        energy: 'Mean data processed (B/s)',
+        crowd: 'Notified users'
+    }
+    x = means['edge']['baserange'] / 2
     for var in [delay, crowd, packet_size, energy]:
-#        merge_data = means['edge'].mean('time').mean('bandwidth')
-        merge_data = means['edge'].mean('time').sel(bandwidth = means['edge']['bandwidth'][7])
+        merge_data = means['edge'].mean('time').mean('bandwidth')
+#        merge_data = means['edge'].mean('time').sel(bandwidth = means['edge']['bandwidth'][7])
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
         ax.set_xlabel("Wireless range (m)")
-        ax.set_ylabel({
-            packet_size: 'Packet size (Bytes)',
-            delay: 'Mean packet delay (s)',
-            energy: 'Mean data processed (B/s)',
-            crowd: 'Notified users'
-        }[var])
+        ax.set_ylabel(ylabels[var])
         ax.set_xscale('log')
-        ax.set_title({
-            packet_size: 'Packet size',
-            delay: 'Delay',
-            crowd: 'Users notified',
-            energy: 'Approx. energy use'
-        }[var] + ' with range and edge server count')
+        ax.set_title(titlebase[var] + ' with range and edge server count')
         index = 0
         for ap_count in merge_data['accessPointCount']:
             y = merge_data.data_vars[var].sel({'accessPointCount': ap_count})
             if (var == energy):
                 y *= merge_data.data_vars[packet_size].sel({'accessPointCount': ap_count})
-                ax.set_yscale('symlog')
+                ax.set_yscale('log')
+                ax.set_ylim(top = 1.8e8)
             ax.plot(x, y, label=str(int(ap_count)), color=colormap(index / 9))
             index = index + 1
         ax.set_ylim(bottom=ax.get_ylim()[0] * 0.9 if var in [delay, energy] else 0, top=ax.get_ylim()[1] * 1.1)
-        ax.add_patch(patches.Rectangle((46, ax.get_ylim()[0]), 92 - 46, ax.get_ylim()[1]-ax.get_ylim()[0], alpha=0.2, color='black'))
+        ax.add_patch(patches.Rectangle((46, ax.get_ylim()[0]), 92 - 46, ax.get_ylim()[1]-ax.get_ylim()[0], alpha=0.15, color='black'))
         ax.set_xlim(min(x), max(x))
-        ylim = ax.get_ylim()
-        ypos = ylim[0] * 1.2 if var in [delay, energy] else (ylim[1] - ylim[0]) * 0.75 + ylim[0]
-        ax.text(x=55, y=ypos, color='black', s='typical\nWi-Fi\nrange')
+        ypos = {
+            packet_size: 1100,
+            delay: 1.8,
+            energy: 1.8e2,
+            crowd: 415
+        }[var]
+        ax.text(x=53, y=ypos, color='black', s='typical\nWi-Fi\nrange')
         ax.legend(ncol=5)
         if (var == crowd):
             ax.legend(ncol=1)
@@ -280,31 +287,44 @@ if __name__ == '__main__':
     
     # Edge delay and size with bandwidth and ap-count
     x = means['edge']['bandwidth']
-    for var in [delay, crowd]:
+    for var in [delay, crowd, packet_size, energy]:
         merge_data = means['edge'].mean('time').mean('baserange')
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
-        ax.set_xlabel("Bandwidth (B/s)")
-        ax.set_ylabel({
-            packet_size: 'Packet size (Bytes)',
-            delay: 'Mean packet delay (s)',
-            crowd: 'People warned'
-        }[var])
+        ax.set_xlabel("Data rate (B/s)")
+        ax.set_ylabel(ylabels[var])
         ax.set_xscale('log')
-        ax.set_title('Sensitivity on bandwidth and number of edge nodes')
+        ax.set_title(titlebase[var] + ' with data rate and edge server count')
         index = 0
         for ap_count in merge_data['accessPointCount']:
             y = merge_data.data_vars[var].sel({'accessPointCount': ap_count})
+            if (var == energy):
+                y *= merge_data.data_vars[packet_size].sel({'accessPointCount': ap_count})
+                ax.set_yscale('log')
+#                ax.set_ylim(top = 1.8e8)
             ax.plot(x, y, label=str(int(ap_count)), color=colormap(index / 9))
             index = index + 1
-        ax.set_ylim(bottom=0, top=ax.get_ylim()[1])
-        ax.add_patch(patches.Rectangle((5.5e6 / 8, 0), 100e6/8 - 5.5e6 / 8, ax.get_ylim()[1], alpha=0.2, color='black'))
-        ax.text(x=10e5, y=ax.get_ylim()[1]*0.10, color='black', s='typical wifi bandwidth capacity')
         ax.set_xlim(min(x), max(x))
-        ax.legend(ncol=2)
-        if (var == crowd):
-            ax.set_ylim(0, 430)
-            ax.legend(ncol=5, loc='upper left')
+        ncol = {
+            packet_size: 5,
+            delay: 5,
+            energy: 5,
+            crowd: 5
+        }[var]
+        ylim = {
+            packet_size: (420, ax.get_ylim()[1]),
+            crowd: (0, 365),
+            energy: (2e3, ax.get_ylim()[1]),
+        }.get(var, ax.get_ylim())
+        ax.set_ylim(ylim)
+        ax.legend(ncol=ncol)
+        ax.add_patch(patches.Rectangle((5.5e6 / 8, 0), 100e6/8 - 5.5e6 / 8, ax.get_ylim()[1], alpha=0.15, color='black'))
+        texty = {
+            crowd: 30,
+            packet_size: 650,
+            energy: 2e4,
+        }.get(var, ax.get_ylim()[1] / 2)
+        ax.text(x=5e5, y=texty, color='black', s='typical Wi-Fi data rate')
         fig.tight_layout()
         fig.savefig('edge-bandwidth'+var[0:5]+'.pdf')
     
