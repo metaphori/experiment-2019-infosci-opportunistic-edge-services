@@ -137,7 +137,7 @@ if __name__ == '__main__':
     seedVars = ['seed']
     minTime = 65
     maxTime = 665
-    timeSamples = int(maxTime - minTime) // 10
+    timeSamples = int(maxTime - minTime) // 2
     timeColumnName = 'time'
     logarithmicTime = False
     
@@ -283,7 +283,7 @@ if __name__ == '__main__':
             ax.legend(ncol=1)
 #            ax.set_ylim(bottom=-100, top=ax.get_ylim()[1])
         fig.tight_layout()
-        fig.savefig('edge-range'+var[0:5]+'.pdf')
+        fig.savefig('edge-range'+''.join(filter(str.isalpha, titlebase[var]))+'.pdf')
     
     # Edge delay and size with bandwidth and ap-count
     x = means['edge']['bandwidth']
@@ -301,7 +301,6 @@ if __name__ == '__main__':
             if (var == energy):
                 y *= merge_data.data_vars[packet_size].sel({'accessPointCount': ap_count})
                 ax.set_yscale('log')
-#                ax.set_ylim(top = 1.8e8)
             ax.plot(x, y, label=str(int(ap_count)), color=colormap(index / 9))
             index = index + 1
         ax.set_xlim(min(x), max(x))
@@ -326,71 +325,73 @@ if __name__ == '__main__':
         }.get(var, ax.get_ylim()[1] / 2)
         ax.text(x=5e5, y=texty, color='black', s='typical Wi-Fi data rate')
         fig.tight_layout()
-        fig.savefig('edge-bandwidth'+var[0:5]+'.pdf')
+        fig.savefig('edge-datarate'+''.join(filter(str.isalpha, titlebase[var]))+'.pdf')
     
     # Cloud delay and size with bandwidth and range
-#    x = means['cloud']['bandwidth']
-#    mobile_technologies = {
-#        "2G (EDGE)": [0.1e6 / 8, 0.3e6 / 8, 'black'],
-#        "HSPA": [1.5e6 / 8, 7.2e6 / 8, 'red'],
-#        "HSPA+": [4e6 / 8, 21e6 / 8, 'green'],
-#        "LTE-AC6": [24e6 / 8, 300e6 / 8, 'blue']
-#    }
-#    for var in [delay, crowd]:
-#        merge_data = means['cloud'].mean('time').mean('propagationDelay')
-#        fig = plt.figure(figsize = figure_size)
-#        ax = fig.add_subplot(1, 1, 1)
-#        ax.set_xlabel("Bandwidth (B/s)")
-#        ax.set_ylabel({
-#            packet_size: 'Packet size (Bytes)',
-#            delay: 'Mean packet delay (s)',
-#            crowd: 'People warned'
-#        }[var])
-#        ax.set_xscale('log')
-#        ax.set_title('Sensitivity on bandwidth and computation effort')
-#        index = 0
-#        for _range in merge_data['baserange']:
-#            y = merge_data.data_vars[var].sel({'baserange': _range})
-#            ax.plot(x, y, label=str(int(_range)), color=colormap(index / 9))
-#            index = index + 1
-#        ax.set_ylim(bottom=0, top=ax.get_ylim()[1])
-#        for mobile_name, mobile_perf in mobile_technologies.items():
-#            bw_min = mobile_perf[0] / 2
-#            bw_max = mobile_perf[1] / 2
-#            ax.add_patch(patches.Rectangle((bw_min, 0), bw_max-bw_min, ax.get_ylim()[1], alpha=0.2, color=mobile_perf[2]))
-#            ax.text(x=bw_min*1.1, y=ax.get_ylim()[1]*0.45, color='black', s=mobile_name)
-#        ax.legend(ncol=5)
-#        ax.set_xlim(min(x), max(x))
-#        fig.tight_layout()
-#        fig.savefig('cloud-bandwidth'+var[0:5]+'.pdf')
-#    
-#    # Cloud delay and size with propagation delay and range
-#    x = means['cloud']['propagationDelay']
-#    for var in [delay, crowd]:
-#        merge_data = means['cloud'].mean('time').mean('bandwidth')
-#        fig = plt.figure(figsize = figure_size)
-#        ax = fig.add_subplot(1, 1, 1)
-#        ax.set_xlabel("Propagation delay (s)")
-#        ax.set_ylabel({
-#            packet_size: 'Packet size (Bytes)',
-#            delay: 'Mean packet delay (s)',
-#            crowd: 'People warned'
-#        }[var])
-#        ax.set_xscale('log')
-#        ax.set_title('Sensitivity on propagation delay and computation effort')
-#        index = 0
-#        for _range in merge_data['baserange']:
-#            y = merge_data.data_vars[var].sel({'baserange': _range})
-#            ax.plot(x, y, label=str(int(_range)), color=colormap(index / 9))
-#            index = index + 1
-#        ax.set_ylim(bottom=0, top=ax.get_ylim()[1])
-#        ax.add_patch(patches.Rectangle((50e-3, 0), 450e-3, ax.get_ylim()[1], alpha=0.2, color='black'))
-#        ax.set_xlim(min(x), max(x))
-#        ax.text(x=1e-1, y=ax.get_ylim()[1]*0.6, color='black', s='typical\ndelay')
-#        ax.legend(ncol=5)
-#        fig.tight_layout()
-#        fig.savefig('cloud-propagation'+var[0:5]+'.pdf')
-#    
+    energy = 'neighbor_count[Sum]'
+    titlebase[energy] = 'Appr. energy use'
+    ylabels[energy] = 'Mean data processed (B/s)'
+    x = means['cloud']['bandwidth']
+    mobile_technologies = {
+        "2G (EDGE)": [0.1e6 / 8, 0.3e6 / 8, 'black'],
+        "HSPA": [1.5e6 / 8, 7.2e6 / 8, 'red'],
+        "HSPA+": [4e6 / 8, 21e6 / 8, 'green'],
+        "LTE-AC6": [24e6 / 8, 300e6 / 8, 'blue']
+    }
+    for var in [delay, crowd, packet_size, energy]:
+        merge_data = means['cloud'].mean('time').mean('propagationDelay')
+        fig = plt.figure(figsize = figure_size)
+        ax = fig.add_subplot(1, 1, 1)
+        ax.set_xlabel("Data rate (B/s)")
+        ax.set_ylabel(ylabels[var])
+        ax.set_xscale('log')
+        ax.set_title(titlebase[var] + ' with data rate and computation effort')
+        index = 0
+        for _range in merge_data['baserange']:
+            y = merge_data.data_vars[var].sel({'baserange': _range})
+            if (var == energy):
+                y *= merge_data.data_vars[packet_size].sel({'baserange': _range})
+                ax.set_yscale('log')
+            ax.plot(x, y, label=str(int(_range)), color=colormap(index / 9))
+            index = index + 1
+        ax.set_ylim(bottom=0, top=ax.get_ylim()[1])
+        for mobile_name, mobile_perf in mobile_technologies.items():
+            bw_min = mobile_perf[0] / 2
+            bw_max = mobile_perf[1] / 2
+            ax.add_patch(patches.Rectangle((bw_min, 0), bw_max-bw_min, ax.get_ylim()[1], alpha=0.15, color=mobile_perf[2]))
+            ax.text(x=bw_min*1.1, y=ax.get_ylim()[1]*0.45, color='black', s=mobile_name)
+        ax.legend(ncol=5)
+        ax.set_xlim(min(x), max(x))
+        fig.tight_layout()
+        fig.savefig('cloud-bandwidth'+''.join(filter(str.isalpha, titlebase[var]))+'.pdf')
+    
+    # Cloud delay and size with propagation delay and range
+    x = means['cloud']['propagationDelay']
+    for var in [delay, crowd, packet_size, energy]:
+        merge_data = means['cloud'].mean('time').mean('bandwidth')
+        fig = plt.figure(figsize = figure_size)
+        ax = fig.add_subplot(1, 1, 1)
+        ax.set_xlabel("Propagation delay (s)")
+        ax.set_ylabel(ylabels[var])
+        ax.set_xscale('log')
+        ax.set_title(titlebase[var] + ' with propagation delay and computation effort')
+        index = 0
+        for _range in merge_data['baserange']:
+            y = merge_data.data_vars[var].sel({'baserange': _range})
+            if (var == energy):
+                y *= merge_data.data_vars[packet_size].sel({'baserange': _range})
+                ax.set_yscale('log')
+            ax.plot(x, y, label=str(int(_range)), color=colormap(index / 9))
+            index = index + 1
+        ax.set_ylim(bottom=0, top=ax.get_ylim()[1])
+        ax.add_patch(patches.Rectangle((50e-3, 0), 450e-3, ax.get_ylim()[1], alpha=0.2, color='black'))
+        ax.set_xlim(min(x), max(x))
+        ax.text(x=1e-1, y=ax.get_ylim()[1]*0.6, color='black', s='typical\ndelay')
+        ax.legend(ncol=5)
+        fig.tight_layout()
+        fig.savefig('cloud-propagation'+var[0:5]+'.pdf')
+    
+#    # Comparisons
 #    def comparisonChart(ycol):
 #        edge_sparse = means['edge'].sel({
 #                'baserange': means['edge']['baserange'][5],
