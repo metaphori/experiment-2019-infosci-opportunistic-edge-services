@@ -140,7 +140,7 @@ if __name__ == '__main__':
     timeSamples = int(maxTime - minTime) // 2
     timeColumnName = 'time'
     logarithmicTime = False
-    allowPreprocess = False
+    allowPreprocess = True
     
     # Setup libraries
     np.set_printoptions(formatter={'float': floatPrecision.format})
