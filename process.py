@@ -231,7 +231,7 @@ if __name__ == '__main__':
     matplotlib.rcParams.update({'axes.titlesize': 13})
     matplotlib.rcParams.update({'axes.labelsize': 12})
 #    colormap = cmx.gist_rainbow
-    colormap = cmx.viridis
+    colormap = lambda x: (lambda alpha: cmx.viridis(alpha * x))(0.9)
     
     # Edge delay and size with range and ap-count
     packet_size = 'packet_size[Mean]'
@@ -413,7 +413,8 @@ if __name__ == '__main__':
         fig.savefig('cloud-propagation'+var[0:5]+'.pdf')
     
     # Comparisons
-    def comparisonChart(ycol):
+    def comparisonChart(ycol, fun = lambda table, ycol: table.data_vars[ycol]):
+        divergingmixcolormap = lambda x: cmx.winter(1 - x * 2) if x < 0.5 else cmx.YlOrRd((x - 0.5) * 2 * 0.6 + 0.3)
         edge_sparse = means['edge'].sel({
                 'baserange': means['edge']['baserange'][5],
                 'bandwidth': means['edge']['bandwidth'][7],
@@ -443,29 +444,44 @@ if __name__ == '__main__':
         ax.set_xlabel("Simulated time (s)")
     #    ax.set_yscale('log')
         x = edge_sparse['time'] - minTime
-        ax.plot(x, edge_sparse.data_vars[ycol], label='edge-sparse')
-        ax.plot(x, edge_dense.data_vars[ycol], label='edge-dense')
-        ax.plot(x, edge_denser.data_vars[ycol], label='edge-denser')
-        ax.plot(x, cloud_2g.data_vars[ycol], label='cloud-2G')
-        ax.plot(x, cloud_3g.data_vars[ycol], label='cloud-3G')
-        ax.plot(x, cloud_4g.data_vars[ycol], label='cloud-LTE')
+        ax.plot(x, fun(edge_sparse, ycol), label='edge-sparse', color=divergingmixcolormap(0.5/5))
+        ax.plot(x, fun(edge_dense, ycol), label='edge-dense', color=divergingmixcolormap(1.5/5))
+        ax.plot(x, fun(edge_denser, ycol), label='edge-denser', color=divergingmixcolormap(2.4/5))
+        ax.plot(x, fun(cloud_2g, ycol), label='cloud-2G', color=divergingmixcolormap(3/5))#, linestyle=':')
+        ax.plot(x, fun(cloud_3g, ycol), label='cloud-3G', color=divergingmixcolormap(4/5))#, linestyle='--')
+        ax.plot(x, fun(cloud_4g, ycol), label='cloud-LTE', color=divergingmixcolormap(5/5))#, linestyle='-.')
         ax.set_xlim(0, maxTime - minTime)
         return (fig, ax)
     
     # Comparison
     delay = 'mean_delay[Mean]'
     fig, ax = comparisonChart(delay)
-    ax.set_ylabel('Mean packet delay (s)')
-    ax.set_title('Packet delay: edge/cloud comparison')
-    ax.legend(ncol=2, bbox_to_anchor=(0.37, 0.58))
+    ax.set_ylabel(ylabels[delay])
+    ax.set_title(titlebase[delay] + ': edge/cloud comparison')
+    ax.legend(ncol=2)#, bbox_to_anchor=(0.37, 0.58))
     fig.savefig('edge-cloud-delay.pdf')
     
     # Quality
     fig, ax = comparisonChart('crowd[Sum]')
-    ax.set_ylabel('People notified of danger')
-    ax.set_title('Notified users: edge/cloud comparison')
-    ax.set_ylim(0, 620)
-    ax.legend(ncol=3, bbox_to_anchor=(0.98, 0.25))
+    ax.set_ylabel(ylabels[crowd])
+    ax.set_title(titlebase[crowd] + ': edge/cloud comparison')
+    ax.set_ylim(200, 450)
+    ax.legend(ncol=2, bbox_to_anchor=(0.2, 0.1))
     fig.savefig('edge-cloud-quality.pdf')
+    
+    # Energy
+    energy_edge = '<value>@neighbor_count[Sum]'
+    def computeEnergy(table, ycol):
+        import numpy as np
+        isCloud = np.isnan(np.nanmean(table[energy_edge]))
+        pick = lambda col: table.data_vars[col]
+        return pick(ycol) * pick(energy) if isCloud else pick(energy_edge)
+    fig, ax = comparisonChart(packet_size, computeEnergy)
+    ax.set_ylabel(ylabels[energy])
+    ax.set_yscale('log')
+    ax.set_ylim((3e2, 1e7))
+    ax.set_title(titlebase[energy] + ': edge/cloud comparison')
+    ax.legend(ncol=2)
+    fig.savefig('edge-cloud-energy.pdf')
     
     #means['edge'].sel(bandwidth=1e7).mean('time').data_vars['packet_size[Mean]']
