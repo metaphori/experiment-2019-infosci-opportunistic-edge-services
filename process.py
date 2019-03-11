@@ -289,7 +289,7 @@ if __name__ == '__main__':
             ax.legend(ncol=1)
 #            ax.set_ylim(bottom=-100, top=ax.get_ylim()[1])
         fig.tight_layout()
-        fig.savefig('edge-range'+''.join(filter(str.isalpha, titlebase[var]))+'.pdf')
+        fig.savefig('edge-range'+''.join(filter(str.isalpha, titlebase[var]))+'.pdf', transparent=True)
     
     # Edge delay and size with bandwidth and ap-count
     x = means['edge']['bandwidth']
@@ -410,34 +410,34 @@ if __name__ == '__main__':
         ax.text(x=7e-2, y=texty, color='black', s='typical delay')
         ax.legend(ncol=5)
         fig.tight_layout()
-        fig.savefig('cloud-propagation'+var[0:5]+'.pdf')
+        fig.savefig('cloud-propagation'+''.join(filter(str.isalpha, titlebase[var])) + '.pdf')
     
     # Comparisons
     def comparisonChart(ycol, fun = lambda table, ycol: table.data_vars[ycol]):
         divergingmixcolormap = lambda x: cmx.winter(1 - x * 2) if x < 0.5 else cmx.YlOrRd((x - 0.5) * 2 * 0.6 + 0.3)
         edge_sparse = means['edge'].sel({
                 'baserange': means['edge']['baserange'][5],
-                'bandwidth': means['edge']['bandwidth'][7],
+                'bandwidth': means['edge']['bandwidth'][6],
                 'accessPointCount': means['edge']['accessPointCount'][5]})
         edge_dense = means['edge'].sel({
                 'baserange': means['edge']['baserange'][5],
-                'bandwidth': means['edge']['bandwidth'][7],
+                'bandwidth': means['edge']['bandwidth'][6],
                 'accessPointCount': means['edge']['accessPointCount'][7]})
         edge_denser = means['edge'].sel({
                 'baserange': means['edge']['baserange'][5],
-                'bandwidth': means['edge']['bandwidth'][7],
+                'bandwidth': means['edge']['bandwidth'][6],
                 'accessPointCount': means['edge']['accessPointCount'][8]})
         cloud_2g = means['cloud'].sel({
                 'baserange': means['cloud']['baserange'][2],
                 'bandwidth': means['cloud']['bandwidth'][1],
                 'propagationDelay': means['cloud']['propagationDelay'][7]})
         cloud_3g = means['cloud'].sel({
-                'baserange': means['cloud']['baserange'][2],
-                'bandwidth': means['cloud']['bandwidth'][3],
+                'baserange': means['cloud']['baserange'][3],
+                'bandwidth': means['cloud']['bandwidth'][4],
                 'propagationDelay': means['cloud']['propagationDelay'][6]})
         cloud_4g = means['cloud'].sel({
-                'baserange': means['cloud']['baserange'][2],
-                'bandwidth': means['cloud']['bandwidth'][5],
+                'baserange': means['cloud']['baserange'][4],
+                'bandwidth': means['cloud']['bandwidth'][7],
                 'propagationDelay': means['cloud']['propagationDelay'][5]})
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
@@ -458,15 +458,18 @@ if __name__ == '__main__':
     fig, ax = comparisonChart(delay)
     ax.set_ylabel(ylabels[delay])
     ax.set_title(titlebase[delay] + ': edge/cloud comparison')
+    ax.set_yscale('log')
     ax.legend(ncol=2)#, bbox_to_anchor=(0.37, 0.58))
+    fig.tight_layout()
     fig.savefig('edge-cloud-delay.pdf')
     
     # Quality
     fig, ax = comparisonChart('crowd[Sum]')
     ax.set_ylabel(ylabels[crowd])
     ax.set_title(titlebase[crowd] + ': edge/cloud comparison')
-    ax.set_ylim(200, 450)
-    ax.legend(ncol=2, bbox_to_anchor=(0.2, 0.1))
+    ax.set_ylim(180, 520)
+    ax.legend(ncol=2, bbox_to_anchor=(0.4, 0.5))
+    fig.tight_layout()
     fig.savefig('edge-cloud-quality.pdf')
     
     # Energy
@@ -479,9 +482,17 @@ if __name__ == '__main__':
     fig, ax = comparisonChart(packet_size, computeEnergy)
     ax.set_ylabel(ylabels[energy])
     ax.set_yscale('log')
-    ax.set_ylim((3e2, 1e7))
+    ax.set_ylim((3e2, 3e7))
     ax.set_title(titlebase[energy] + ': edge/cloud comparison')
     ax.legend(ncol=2)
+    fig.tight_layout()
     fig.savefig('edge-cloud-energy.pdf')
     
     #means['edge'].sel(bandwidth=1e7).mean('time').data_vars['packet_size[Mean]']
+    #cut pdf borders
+    try:
+        import subprocess
+        for image in filter(lambda file: fnmatch.fnmatch(file, '*.pdf'), os.listdir('.')):
+            subprocess.call(["krop", "--autotrim", "--go", '-o', image, image])
+    except OSError as e:
+        print('Unable to trim PDFS using krop: ' + e)
